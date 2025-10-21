@@ -37,49 +37,53 @@ export type PrimitiveToTSType<T extends PrimitiveType> = T extends "u8" | "u16" 
         ? number | bigint
         : never
 
-type FieldDefInputType<Def> = Def extends PrimitiveType
-  ? PrimitiveToTSType<Def>
-  : Def extends "cstring" | "char*"
-    ? string | null
-    : Def extends EnumDef<infer E>
-      ? keyof E
-      : Def extends StructDef<any, infer InputType>
-        ? InputType
-        : Def extends ObjectPointerDef<infer T>
-          ? T | null
-          : Def extends readonly [infer InnerDef]
-            ? InnerDef extends PrimitiveType
-              ? Iterable<PrimitiveToTSType<InnerDef>>
-              : InnerDef extends EnumDef<infer E>
-                ? Iterable<keyof E>
-                : InnerDef extends StructDef<any, infer InputType>
-                  ? Iterable<InputType>
-                  : InnerDef extends ObjectPointerDef<infer T>
-                    ? (T | null)[]
-                    : never
-            : never
+type FieldDefInputType<Def, Options = undefined> = Options extends { packTransform: (value: infer T) => any }
+  ? T
+  : Def extends PrimitiveType
+    ? PrimitiveToTSType<Def>
+    : Def extends "cstring" | "char*"
+      ? string | null
+      : Def extends EnumDef<infer E>
+        ? keyof E
+        : Def extends StructDef<any, infer InputType>
+          ? InputType
+          : Def extends ObjectPointerDef<infer T>
+            ? T | null
+            : Def extends readonly [infer InnerDef]
+              ? InnerDef extends PrimitiveType
+                ? Iterable<PrimitiveToTSType<InnerDef>>
+                : InnerDef extends EnumDef<infer E>
+                  ? Iterable<keyof E>
+                  : InnerDef extends StructDef<any, infer InputType>
+                    ? Iterable<InputType>
+                    : InnerDef extends ObjectPointerDef<infer T>
+                      ? (T | null)[]
+                      : never
+              : never
 
-type FieldDefOutputType<Def> = Def extends PrimitiveType
-  ? PrimitiveToTSType<Def>
-  : Def extends "cstring" | "char*"
-    ? string | null
-    : Def extends EnumDef<infer E>
-      ? keyof E
-      : Def extends StructDef<infer OutputType, any>
-        ? OutputType
-        : Def extends ObjectPointerDef<infer T>
-          ? T | null
-          : Def extends readonly [infer InnerDef]
-            ? InnerDef extends PrimitiveType
-              ? Iterable<PrimitiveToTSType<InnerDef>>
-              : InnerDef extends EnumDef<infer E>
-                ? Iterable<keyof E>
-                : InnerDef extends StructDef<infer OutputType, any>
-                  ? Iterable<OutputType>
-                  : InnerDef extends ObjectPointerDef<infer T>
-                    ? (T | null)[]
-                    : never
-            : never
+type FieldDefOutputType<Def, Options = undefined> = Options extends { unpackTransform: (value: any) => infer T }
+  ? T
+  : Def extends PrimitiveType
+    ? PrimitiveToTSType<Def>
+    : Def extends "cstring" | "char*"
+      ? string | null
+      : Def extends EnumDef<infer E>
+        ? keyof E
+        : Def extends StructDef<infer OutputType, any>
+          ? OutputType
+          : Def extends ObjectPointerDef<infer T>
+            ? T | null
+            : Def extends readonly [infer InnerDef]
+              ? InnerDef extends PrimitiveType
+                ? Iterable<PrimitiveToTSType<InnerDef>>
+                : InnerDef extends EnumDef<infer E>
+                  ? Iterable<keyof E>
+                  : InnerDef extends StructDef<infer OutputType, any>
+                    ? Iterable<OutputType>
+                    : InnerDef extends ObjectPointerDef<infer T>
+                      ? (T | null)[]
+                      : never
+              : never
 
 type IsOptional<Options extends StructFieldOptions | undefined> = Options extends { optional: true }
   ? true
@@ -92,15 +96,15 @@ type IsOptional<Options extends StructFieldOptions | undefined> = Options extend
         : false
 
 export type StructObjectInputType<Fields extends readonly StructField[]> = {
-  [F in Fields[number] as IsOptional<F[2]> extends false ? F[0] : never]: FieldDefInputType<F[1]>
+  [F in Fields[number] as IsOptional<F[2]> extends false ? F[0] : never]: FieldDefInputType<F[1], F[2]>
 } & {
-  [F in Fields[number] as IsOptional<F[2]> extends true ? F[0] : never]?: FieldDefInputType<F[1]> | null
+  [F in Fields[number] as IsOptional<F[2]> extends true ? F[0] : never]?: FieldDefInputType<F[1], F[2]> | null
 }
 
 export type StructObjectOutputType<Fields extends readonly StructField[]> = {
-  [F in Fields[number] as IsOptional<F[2]> extends false ? F[0] : never]: FieldDefOutputType<F[1]>
+  [F in Fields[number] as IsOptional<F[2]> extends false ? F[0] : never]: FieldDefOutputType<F[1], F[2]>
 } & {
-  [F in Fields[number] as IsOptional<F[2]> extends true ? F[0] : never]?: FieldDefOutputType<F[1]> | null
+  [F in Fields[number] as IsOptional<F[2]> extends true ? F[0] : never]?: FieldDefOutputType<F[1], F[2]> | null
 }
 
 export type DefineStructReturnType<
