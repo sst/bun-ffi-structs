@@ -730,6 +730,42 @@ export function defineStruct<const Fields extends readonly StructField[], const 
       return result as StructObjectOutputType<Fields>
     },
 
+    packList(objects: Simplify<StructObjectInputType<Fields>>[], options?: StructFieldPackOptions): ArrayBuffer {
+      if (objects.length === 0) {
+        return new ArrayBuffer(0)
+      }
+
+      const buffer = new ArrayBuffer(totalSize * objects.length)
+      const view = new DataView(buffer)
+
+      for (let i = 0; i < objects.length; i++) {
+        let mappedObj: any = objects[i]
+        if (structDefOptions?.mapValue) {
+          mappedObj = structDefOptions.mapValue(objects[i])
+        }
+
+        for (const field of layout) {
+          const value = (mappedObj as any)[field.name] ?? field.default
+          if (!field.optional && value === undefined) {
+            fatalError(
+              `Packing non-optional field '${field.name}' at index ${i} but value is undefined (and no default provided)`,
+            )
+          }
+          if (field.validate) {
+            for (const validateFn of field.validate) {
+              validateFn(value, field.name, {
+                hints: options?.validationHints,
+                input: mappedObj,
+              })
+            }
+          }
+          field.pack(view, i * totalSize + field.offset, value, mappedObj, options)
+        }
+      }
+
+      return buffer
+    },
+
     describe() {
       return description
     },
