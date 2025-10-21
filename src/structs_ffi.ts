@@ -513,8 +513,18 @@ export function defineStruct<const Fields extends readonly StructField[], const 
     }
     if (options.lengthOf) {
       const originalPack = pack
-      pack = (view, off, val, obj, packOptions) =>
-        originalPack(view, off, obj[options.lengthOf!] ? obj[options.lengthOf!].length : 0, obj, packOptions)
+      pack = (view, off, val, obj, packOptions) => {
+        const targetValue = obj[options.lengthOf!]
+        let length = 0
+        if (targetValue) {
+          if (typeof targetValue === "string") {
+            length = Buffer.byteLength(targetValue)
+          } else {
+            length = targetValue.length
+          }
+        }
+        return originalPack(view, off, length, obj, packOptions)
+      }
     }
 
     // Normalize validation to always be an array
