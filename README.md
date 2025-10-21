@@ -24,6 +24,8 @@ bun install bun-ffi-structs
 
 ## Usage
 
+See [examples/README.md](examples/README.md) for runnable examples demonstrating various features.
+
 ```typescript
 import { defineStruct, defineEnum, allocStruct, objectPtr } from "./structs_ffi"
 
