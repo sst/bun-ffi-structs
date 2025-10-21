@@ -33,7 +33,7 @@ jobs:
       - name: Publish to NPM
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > dist/.npmrc
-          cd dist && bun publish --dry-run --access public
+          cd dist && bun publish --access public
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
