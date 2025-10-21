@@ -24,7 +24,7 @@ const CircleStruct = defineStruct(
       radius: packed.radius,
       area: Math.PI * packed.radius * packed.radius,
     }),
-  }
+  },
 )
 
 const circle = {

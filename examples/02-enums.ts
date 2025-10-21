@@ -16,7 +16,7 @@ const PriorityEnum = defineEnum(
     HIGH: 2,
     CRITICAL: 3,
   },
-  "u8"
+  "u8",
 )
 
 const TaskStruct = defineStruct([
