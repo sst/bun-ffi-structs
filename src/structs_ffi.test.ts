@@ -342,7 +342,7 @@ describe("Structs FFI", () => {
   })
 
   describe("arrays", () => {
-    it("should pack primitive arrays", () => {
+    it("should pack and unpack primitive arrays", () => {
       const TestStruct = defineStruct([
         ["count", "u32", { lengthOf: "values" }],
         ["values", ["u32"]],
@@ -350,8 +350,53 @@ describe("Structs FFI", () => {
 
       const input = { values: [1, 2, 3, 4, 5] }
       const packed = TestStruct.pack(input)
+      const unpacked = TestStruct.unpack(packed)
 
-      expect(packed.byteLength).toBeGreaterThan(0)
+      expect(unpacked.count).toBe(5)
+      expect(unpacked.values).toEqual([1, 2, 3, 4, 5])
+    })
+
+    it("should pack and unpack different primitive array types", () => {
+      const TestStruct = defineStruct([
+        ["u8Count", "u32", { lengthOf: "u8Array" }],
+        ["u8Array", ["u8"]],
+        ["f32Count", "u32", { lengthOf: "f32Array" }],
+        ["f32Array", ["f32"]],
+        ["i32Count", "u32", { lengthOf: "i32Array" }],
+        ["i32Array", ["i32"]],
+      ] as const)
+
+      const input = {
+        u8Array: [1, 2, 3],
+        f32Array: [1.5, 2.5, 3.5],
+        i32Array: [-10, 0, 10],
+      }
+      const packed = TestStruct.pack(input)
+      const unpacked = TestStruct.unpack(packed)
+
+      expect(unpacked.u8Count).toBe(3)
+      expect(unpacked.u8Array).toEqual([1, 2, 3])
+      expect(unpacked.f32Count).toBe(3)
+      const f32Array = unpacked.f32Array as number[]
+      expect(f32Array[0]).toBeCloseTo(1.5)
+      expect(f32Array[1]).toBeCloseTo(2.5)
+      expect(f32Array[2]).toBeCloseTo(3.5)
+      expect(unpacked.i32Count).toBe(3)
+      expect(unpacked.i32Array).toEqual([-10, 0, 10])
+    })
+
+    it("should unpack empty primitive arrays", () => {
+      const TestStruct = defineStruct([
+        ["count", "u32", { lengthOf: "values" }],
+        ["values", ["u32"]],
+      ] as const)
+
+      const input = { values: [] }
+      const packed = TestStruct.pack(input)
+      const unpacked = TestStruct.unpack(packed)
+
+      expect(unpacked.count).toBe(0)
+      expect(unpacked.values).toEqual([])
     })
 
     it("should pack enum arrays with length field", () => {

@@ -287,7 +287,7 @@ export function defineStruct<const Fields extends readonly StructField[], const 
     let pack: (view: DataView, offset: number, value: any, obj: any, options?: StructFieldPackOptions) => void
     let unpack: (view: DataView, offset: number) => any
     let needsLengthOf = false
-    let lengthOfDef: EnumDef<any> | null = null
+    let lengthOfDef: EnumDef<any> | PrimitiveType | null = null
 
     // Primitive
     if (isPrimitiveType(typeOrStruct)) {
@@ -451,7 +451,8 @@ export function defineStruct<const Fields extends readonly StructField[], const 
           pointerPacker(view, off, ptr(buffer))
         }
         unpack = null!
-        // TODO: Implement unpack for primitve array
+        needsLengthOf = true
+        lengthOfDef = def
       } else if (isObjectPointerDef(def)) {
         arrayElementSize = pointerSize
         pack = (view, off, val) => {
@@ -553,35 +554,58 @@ export function defineStruct<const Fields extends readonly StructField[], const 
 
   // Resolve lengthOf fields
   for (const { requester, def } of lengthOfRequested) {
-    if (isPrimitiveType(def)) {
-      // TODO: Implement lengthOf for primitive types
-      continue
-    }
     const lengthOfField = lengthOfFields[requester.name]
     if (!lengthOfField) {
       throw new Error(`lengthOf field not found for array field ${requester.name}`)
     }
-    const elemSize = def.type === "u32" ? 4 : 8
 
-    requester.unpack = (view, off) => {
-      const result = []
-      const length = lengthOfField.unpack(view, lengthOfField.offset)
-      const ptrAddress = pointerUnpacker(view, off)
+    if (isPrimitiveType(def)) {
+      const elemSize = typeSizes[def]
+      const { unpack: primitiveUnpack } = primitivePackers(def)
 
-      if (ptrAddress === 0n && length > 0) {
-        throw new Error(`Array field ${requester.name} has null pointer but length ${length}.`)
+      requester.unpack = (view, off) => {
+        const result = []
+        const length = lengthOfField.unpack(view, lengthOfField.offset)
+        const ptrAddress = pointerUnpacker(view, off)
+
+        if (ptrAddress === 0n && length > 0) {
+          throw new Error(`Array field ${requester.name} has null pointer but length ${length}.`)
+        }
+        if (ptrAddress === 0n || length === 0) {
+          return []
+        }
+
+        const buffer = toArrayBuffer(ptrAddress, 0, length * elemSize)
+        const bufferView = new DataView(buffer)
+
+        for (let i = 0; i < length; i++) {
+          result.push(primitiveUnpack(bufferView, i * elemSize))
+        }
+        return result
       }
-      if (ptrAddress === 0n || length === 0) {
-        return []
-      }
+    } else {
+      const elemSize = def.type === "u32" ? 4 : 8
 
-      const buffer = toArrayBuffer(ptrAddress, 0, length * elemSize)
-      const bufferView = new DataView(buffer)
+      requester.unpack = (view, off) => {
+        const result = []
+        const length = lengthOfField.unpack(view, lengthOfField.offset)
+        const ptrAddress = pointerUnpacker(view, off)
 
-      for (let i = 0; i < length; i++) {
-        result.push(def.from(bufferView.getUint32(i * elemSize, true)))
+        if (ptrAddress === 0n && length > 0) {
+          throw new Error(`Array field ${requester.name} has null pointer but length ${length}.`)
+        }
+        if (ptrAddress === 0n || length === 0) {
+          return []
+        }
+
+        const buffer = toArrayBuffer(ptrAddress, 0, length * elemSize)
+        const bufferView = new DataView(buffer)
+
+        for (let i = 0; i < length; i++) {
+          result.push(def.from(bufferView.getUint32(i * elemSize, true)))
+        }
+        return result
       }
-      return result
     }
   }
 
