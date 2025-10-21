@@ -10,7 +10,6 @@ import type {
   AllocStructResult,
   EnumDef,
   StructFieldPackOptions,
-  StructFieldDescription,
   ArrayFieldMetadata,
   StructDef,
   StructDefOptions,
