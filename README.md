@@ -47,7 +47,7 @@ const ObjectStruct = defineStruct([
   ["items", ["u32"]],
 ] as const)
 
-const buffer = ObjectStruct.pack({
+const buffer: ArrayBuffer = ObjectStruct.pack({
   id: 42,
   position: { x: 1.0, y: 2.0, z: 3.0 },
   color: "BLUE",
@@ -55,18 +55,11 @@ const buffer = ObjectStruct.pack({
 })
 
 const unpacked = ObjectStruct.unpack(buffer)
-
-// Pack/unpack multiple structs into/from a single buffer
-const objects = [
-  { id: 1, position: { x: 1.0, y: 2.0, z: 3.0 }, color: "RED", items: [1, 2] },
-  { id: 2, position: { x: 4.0, y: 5.0, z: 6.0 }, color: "GREEN", items: [3, 4] },
-  { id: 3, position: { x: 7.0, y: 8.0, z: 9.0 }, color: "BLUE", items: [5, 6] },
-]
-const batchBuffer = ObjectStruct.packList(objects)
-const unpackedObjects = ObjectStruct.unpackList(batchBuffer, objects.length)
-
-// Allocate with pre-sized arrays
-const { buffer, view, subBuffers } = allocStruct(ObjectStruct, {
-  lengths: { items: 5 },
-})
+// -> resolves to type {
+//   id: number
+//   position: { x: number, y: number, z: number }
+//   color: "RED" | "GREEN" | "BLUE"
+//   items: Iterable<number>
+//   count?: number | null | undefined
+// }
 ```
