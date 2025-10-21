@@ -1,4 +1,22 @@
-import { ptr, toArrayBuffer, type Pointer } from "bun:ffi"
+import { ptr, toArrayBuffer } from "bun:ffi"
+import type {
+  PrimitiveType,
+  PointyObject,
+  ObjectPointerDef,
+  Simplify,
+  StructObjectInputType,
+  StructObjectOutputType,
+  AllocStructOptions,
+  AllocStructResult,
+  EnumDef,
+  StructFieldPackOptions,
+  StructFieldDescription,
+  ArrayFieldMetadata,
+  StructDef,
+  StructDefOptions,
+  DefineStructReturnType,
+  PrimitiveToTSType,
+} from "./types"
 
 function fatalError(...args: any[]): never {
   const message = args.join(" ")
@@ -7,19 +25,6 @@ function fatalError(...args: any[]): never {
 }
 
 export const pointerSize = process.arch === "x64" || process.arch === "arm64" ? 8 : 4
-
-export type PrimitiveType =
-  | "u8"
-  | "u16"
-  | "u32"
-  | "u64"
-  | "f32"
-  | "f64"
-  | "pointer"
-  | "i32"
-  | "i16"
-  | "bool_u8"
-  | "bool_u32"
 
 const typeSizes: Record<PrimitiveType, number> = {
   u8: 1,
@@ -57,15 +62,6 @@ const typeGetters: Record<PrimitiveType, (view: DataView, offset: number) => any
     pointerSize === 8 ? view.getBigUint64(offset, true) : BigInt(view.getUint32(offset, true)),
 }
 
-// --- Types ---
-interface PointyObject {
-  ptr: Pointer | number | bigint | null
-}
-
-interface ObjectPointerDef<T extends PointyObject> {
-  __type: "objectPointer"
-}
-
 /**
  * Type helper for creating object pointers for structs.
  */
@@ -77,110 +73,6 @@ export function objectPtr<T extends PointyObject>(): ObjectPointerDef<T> {
 
 function isObjectPointerDef<T extends PointyObject>(type: any): type is ObjectPointerDef<T> {
   return typeof type === "object" && type !== null && type.__type === "objectPointer"
-}
-
-// --- Types ---
-type Prettify<T> = {
-  [K in keyof T]: T[K]
-} & {}
-
-export type Simplify<T> = T extends (...args: any[]) => any ? T : T extends object ? Prettify<T> : T
-
-type PrimitiveToTSType<T extends PrimitiveType> = T extends "u8" | "u16" | "u32" | "i16" | "i32" | "f32" | "f64"
-  ? number
-  : T extends "u64"
-    ? bigint | number // typescript webgpu types currently use numbers for u64
-    : T extends "bool_u8" | "bool_u32"
-      ? boolean
-      : T extends "pointer"
-        ? number | bigint // Represent pointers as numbers or bigints
-        : never
-
-type FieldDefInputType<Def> = Def extends PrimitiveType
-  ? PrimitiveToTSType<Def>
-  : Def extends "cstring" | "char*"
-    ? string | null // Strings can be null
-    : Def extends EnumDef<infer E>
-      ? keyof E // Enums map to their keys
-      : Def extends StructDef<any, infer InputType>
-        ? InputType // Extract InputType for pack operations
-        : Def extends ObjectPointerDef<infer T>
-          ? T | null
-          : Def extends readonly [infer InnerDef] // Array check
-            ? InnerDef extends PrimitiveType
-              ? Iterable<PrimitiveToTSType<InnerDef>>
-              : InnerDef extends EnumDef<infer E>
-                ? Iterable<keyof E>
-                : InnerDef extends StructDef<any, infer InputType>
-                  ? Iterable<InputType> // Extract InputType for struct arrays
-                  : InnerDef extends ObjectPointerDef<infer T>
-                    ? (T | null)[]
-                    : never
-            : never
-
-type FieldDefOutputType<Def> = Def extends PrimitiveType
-  ? PrimitiveToTSType<Def>
-  : Def extends "cstring" | "char*"
-    ? string | null // Strings can be null
-    : Def extends EnumDef<infer E>
-      ? keyof E // Enums map to their keys
-      : Def extends StructDef<infer OutputType, any>
-        ? OutputType // Extract OutputType for unpack operations
-        : Def extends ObjectPointerDef<infer T>
-          ? T | null
-          : Def extends readonly [infer InnerDef] // Array check
-            ? InnerDef extends PrimitiveType
-              ? Iterable<PrimitiveToTSType<InnerDef>>
-              : InnerDef extends EnumDef<infer E>
-                ? Iterable<keyof E>
-                : InnerDef extends StructDef<infer OutputType, any>
-                  ? Iterable<OutputType> // Extract OutputType for struct arrays
-                  : InnerDef extends ObjectPointerDef<infer T>
-                    ? (T | null)[]
-                    : never
-            : never
-
-type IsOptional<Options extends StructFieldOptions | undefined> = Options extends { optional: true }
-  ? true
-  : Options extends { default: any }
-    ? true
-    : Options extends { lengthOf: string }
-      ? true // lengthOf implies the field is derived/optional input
-      : Options extends { condition: () => boolean }
-        ? true // condition implies the field might not exist
-        : false
-
-// Constructs the TS object type from the struct field definitions for INPUT (pack operations)
-export type StructObjectInputType<Fields extends readonly StructField[]> = {
-  [F in Fields[number] as IsOptional<F[2]> extends false ? F[0] : never]: FieldDefInputType<F[1]>
-} & {
-  [F in Fields[number] as IsOptional<F[2]> extends true ? F[0] : never]?: FieldDefInputType<F[1]> | null
-}
-
-// Constructs the TS object type from the struct field definitions for OUTPUT (unpack operations)
-export type StructObjectOutputType<Fields extends readonly StructField[]> = {
-  [F in Fields[number] as IsOptional<F[2]> extends false ? F[0] : never]: FieldDefOutputType<F[1]>
-} & {
-  [F in Fields[number] as IsOptional<F[2]> extends true ? F[0] : never]?: FieldDefOutputType<F[1]> | null
-}
-
-type DefineStructReturnType<
-  Fields extends readonly StructField[],
-  Options extends StructDefOptions | undefined,
-> = StructDef<
-  Simplify<Options extends { reduceValue: (value: any) => infer R } ? R : StructObjectOutputType<Fields>>,
-  Simplify<Options extends { mapValue: (value: infer V) => any } ? V : StructObjectInputType<Fields>>
->
-// --- END: types ---
-
-interface AllocStructOptions {
-  lengths?: Record<string, number>
-}
-
-interface AllocStructResult {
-  buffer: ArrayBuffer
-  view: DataView
-  subBuffers?: Record<string, ArrayBuffer>
 }
 
 export function allocStruct(structDef: StructDef<any, any>, options?: AllocStructOptions): AllocStructResult {
@@ -217,14 +109,6 @@ export function allocStruct(structDef: StructDef<any, any>, options?: AllocStruc
 
 function alignOffset(offset: number, align: number): number {
   return (offset + (align - 1)) & ~(align - 1)
-}
-
-export interface EnumDef<T extends Record<string, number>> {
-  __type: "enum"
-  type: Exclude<PrimitiveType, "bool_u8" | "bool_u32">
-  to(value: keyof T): number
-  from(value: number | bigint): keyof T
-  enum: T
 }
 
 function enumTypeError(value: string): never {
@@ -281,10 +165,6 @@ type StructField =
       StructFieldOptions?,
     ]
 
-export interface StructFieldPackOptions {
-  validationHints?: any
-}
-
 interface StructLayoutField {
   name: string
   offset: number
@@ -297,36 +177,6 @@ interface StructLayoutField {
   unpack: (view: DataView, offset: number) => any
   type: PrimitiveType | EnumDef<any> | StructDef<any> | "cstring" | "char*" | ObjectPointerDef<any> | readonly [any]
   lengthOf?: string
-}
-
-export interface StructFieldDescription {
-  name: string
-  offset: number
-  size: number
-  align: number
-  optional: boolean
-  type: PrimitiveType | EnumDef<any> | StructDef<any> | "cstring" | "char*" | ObjectPointerDef<any> | readonly [any]
-  lengthOf?: string
-}
-
-export interface ArrayFieldMetadata {
-  elementSize: number
-  arrayOffset: number
-  lengthOffset: number
-  lengthPack: (view: DataView, offset: number, value: number) => void
-}
-
-export interface StructDef<OutputType, InputType = OutputType> {
-  __type: "struct"
-  size: number
-  align: number
-  hasMapValue: boolean
-  layoutByName: Map<string, StructFieldDescription>
-  arrayFields: Map<string, ArrayFieldMetadata>
-  pack(obj: Simplify<InputType>, options?: StructFieldPackOptions): ArrayBuffer
-  packInto(obj: Simplify<InputType>, view: DataView, offset: number, options?: StructFieldPackOptions): void
-  unpack(buf: ArrayBuffer | SharedArrayBuffer): Simplify<OutputType>
-  describe(): StructFieldDescription[]
 }
 
 function isStruct(type: any): type is StructDef<any> {
@@ -395,12 +245,6 @@ function primitivePackers(type: PrimitiveType) {
   }
 
   return { pack, unpack }
-}
-
-export interface StructDefOptions {
-  default?: Record<string, any> // Default values for the entire struct on unpack
-  mapValue?: (value: any) => any // Map input object before packing
-  reduceValue?: (value: any) => any // Transform unpacked object to different type
 }
 
 const { pack: pointerPacker, unpack: pointerUnpacker } = primitivePackers("pointer")
