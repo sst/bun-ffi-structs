@@ -36,7 +36,7 @@ describe("Example 2: Enums (exact reproduction)", () => {
     expect(packed.byteLength).toBeGreaterThan(0)
 
     const unpacked = TaskStruct.unpack(packed)
-    
+
     // Verify all values match
     expect(unpacked.id).toBe(101)
     expect(unpacked.status).toBe("ACTIVE")
