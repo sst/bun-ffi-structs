@@ -94,4 +94,4 @@ const entriesPtr = view.getBigUint64(entriesField.offset, true)
 console.log("  Entries pointer:", entriesPtr !== 0n ? "✓ allocated" : "✗ null")
 
 console.log("\n✓ Complex nested structures with arrays, enums, and defaults work!")
-console.log("(Note: Unpacking arrays of structs is not yet implemented)")
+console.log("\nLimitation: Unpacking arrays of structs is not yet implemented.")

@@ -30,4 +30,4 @@ const packed = PolylineStruct.pack(polyline)
 console.log("Packed size:", packed.byteLength, "bytes")
 
 console.log("\n✓ Arrays of structs can be packed!")
-console.log("(Unpacking arrays of structs not yet implemented)")
+console.log("\nLimitation: Unpacking arrays of structs is not yet implemented.")
