@@ -130,3 +130,5 @@ console.log("Unpacked:", {
 })
 
 console.log("\n✓ Optional pointer fields with type transforms work!")
+
+process.exit(0)

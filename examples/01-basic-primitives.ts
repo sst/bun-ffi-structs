@@ -29,3 +29,5 @@ const unpacked = BasicStruct.unpack(packed)
 console.log("Unpacked:", unpacked)
 
 console.log("\n✓ All primitive values match!")
+
+process.exit(0)

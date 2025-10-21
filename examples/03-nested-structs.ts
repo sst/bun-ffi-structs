@@ -34,3 +34,5 @@ const unpacked = TransformStruct.unpack(packed)
 console.log("Unpacked transform:", unpacked)
 
 console.log("\n✓ Nested structs work correctly!")
+
+process.exit(0)

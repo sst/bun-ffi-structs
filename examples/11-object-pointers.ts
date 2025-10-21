@@ -38,3 +38,5 @@ console.log("  size:", size)
 console.log("  usage:", `0x${usage.toString(16)}`)
 
 console.log("\n✓ Object pointers pack the .ptr property!")
+
+process.exit(0)

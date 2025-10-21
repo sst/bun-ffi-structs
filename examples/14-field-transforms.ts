@@ -42,3 +42,5 @@ const unpacked = UserStruct.unpack(packed)
 console.log("Unpacked (age in years):", unpacked)
 
 console.log("\n✓ Field transforms allow per-field data conversion!")
+
+process.exit(0)
