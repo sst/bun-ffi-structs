@@ -191,6 +191,7 @@ export interface StructDef<OutputType, InputType = OutputType> {
   packInto(obj: Simplify<InputType>, view: DataView, offset: number, options?: StructFieldPackOptions): void
   packList(objects: Simplify<InputType>[], options?: StructFieldPackOptions): ArrayBuffer
   unpack(buf: ArrayBuffer | SharedArrayBuffer): Simplify<OutputType>
+  unpackList(buf: ArrayBuffer | SharedArrayBuffer, count: number): Simplify<OutputType>[]
   describe(): StructFieldDescription[]
 }
 

@@ -766,6 +766,48 @@ export function defineStruct<const Fields extends readonly StructField[], const 
       return buffer
     },
 
+    unpackList(buf: ArrayBuffer | SharedArrayBuffer, count: number): Simplify<StructObjectOutputType<Fields>>[] {
+      if (count === 0) {
+        return []
+      }
+
+      const expectedSize = totalSize * count
+      if (buf.byteLength < expectedSize) {
+        fatalError(
+          `Buffer size (${buf.byteLength}) is smaller than expected size (${expectedSize}) for unpacking ${count} structs.`,
+        )
+      }
+
+      const view = new DataView(buf)
+      const results: any[] = []
+
+      for (let i = 0; i < count; i++) {
+        const offset = i * totalSize
+        const result: any = structDefOptions?.default ? { ...structDefOptions.default } : {}
+
+        for (const field of layout) {
+          if (!field.unpack) {
+            continue
+          }
+
+          try {
+            result[field.name] = field.unpack(view, offset + field.offset)
+          } catch (e: any) {
+            console.error(`Error unpacking field '${field.name}' at index ${i}, offset ${offset + field.offset}:`, e)
+            throw e
+          }
+        }
+
+        if (structDefOptions?.reduceValue) {
+          results.push(structDefOptions.reduceValue(result))
+        } else {
+          results.push(result as StructObjectOutputType<Fields>)
+        }
+      }
+
+      return results
+    },
+
     describe() {
       return description
     },
