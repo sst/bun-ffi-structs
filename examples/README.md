@@ -16,6 +16,23 @@ Run all examples:
 ./examples/run-all.sh
 ```
 
+## Native FFI Example
+
+The `native/` subdirectory contains a complete example of using bun-ffi-structs with actual native Zig code:
+
+### Prerequisites
+
+- Zig compiler installed
+- Bun runtime
+
+### Running the Native Example
+
+```bash
+cd examples/native
+./build.sh    # Compile the Zig dynamic library
+bun index.ts  # Run the TypeScript example
+```
+
 ## Limitations
 
 - Unpacking arrays of structs is not yet implemented (see examples 09, 10)
