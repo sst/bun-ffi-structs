@@ -22,6 +22,8 @@ TypeScript FFI struct library for Bun. Define and pack/unpack C-style structs wi
 bun install bun-ffi-structs
 ```
 
+For local development, use `scripts/link-dev.sh <target-project-root>` to symlink this package into another project's node_modules.
+
 ## Usage
 
 See [examples/README.md](examples/README.md) for runnable examples demonstrating various features.
