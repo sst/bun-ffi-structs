@@ -37,7 +37,7 @@ const PositionStruct = defineStruct([
   ["x", "f32"],
   ["y", "f32"],
   ["z", "f32"],
-] as const)
+])
 
 const ObjectStruct = defineStruct([
   ["id", "u32"],
@@ -45,7 +45,7 @@ const ObjectStruct = defineStruct([
   ["color", ColorEnum],
   ["count", "u32", { lengthOf: "items" }],
   ["items", ["u32"]],
-] as const)
+])
 
 const buffer: ArrayBuffer = ObjectStruct.pack({
   id: 42,
