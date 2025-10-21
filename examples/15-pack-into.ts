@@ -40,4 +40,3 @@ for (let i = 0; i < particles.length; i++) {
 }
 
 console.log("\n✓ packInto enables zero-copy writes at specific offsets!")
-

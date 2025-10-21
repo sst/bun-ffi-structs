@@ -42,4 +42,3 @@ const limitsPtr2 = view2.getBigUint64(8, true)
 console.log("  limits pointer:", limitsPtr2 !== 0n ? "allocated" : "null")
 
 console.log("\n✓ asPointer packs nested structs as separate allocations!")
-

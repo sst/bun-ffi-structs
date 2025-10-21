@@ -37,4 +37,3 @@ console.log("  valueCount:", unpacked.valueCount)
 console.log("  values:", unpacked.values)
 
 console.log("\n✓ Arrays with length fields work!")
-

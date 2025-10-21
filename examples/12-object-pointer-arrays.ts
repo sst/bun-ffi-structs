@@ -33,4 +33,3 @@ console.log("  attachmentCount:", count)
 console.log("  attachments ptr:", `0x${arrayPtr.toString(16)}`)
 
 console.log("\n✓ Arrays of object pointers pack into pointer arrays!")
-

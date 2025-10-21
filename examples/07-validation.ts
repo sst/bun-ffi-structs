@@ -67,4 +67,3 @@ try {
 } catch (e) {
   console.log("✓ Validation correctly rejected:", (e as Error).message)
 }
-
