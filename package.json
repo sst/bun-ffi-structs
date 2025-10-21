@@ -5,9 +5,14 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "prettier": "3.6.2"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "prettier": {
+    "semi": false,
+    "printWidth": 120
   }
 }
