@@ -1,0 +1,13 @@
+{
+  "name": "bun-ffi-structs",
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
