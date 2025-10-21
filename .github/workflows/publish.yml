@@ -31,6 +31,6 @@ jobs:
       - run: ./scripts/build.sh
 
       - name: Publish to NPM
-        run: bun publish --access public ./dist
+        run: cd dist && bun publish --access public
         env:
           BUN_CONFIG_REGISTRY_TOKEN: ${{ secrets.NPM_TOKEN }}
