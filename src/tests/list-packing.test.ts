@@ -796,9 +796,7 @@ describe("unpackList", () => {
   })
 
   it("should unpack partial buffer when count is less than full capacity", () => {
-    const TestStruct = defineStruct([
-      ["value", "u32"],
-    ] as const)
+    const TestStruct = defineStruct([["value", "u32"]] as const)
 
     const objects = [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }]
 
@@ -944,9 +942,7 @@ describe("packList and unpackList roundtrip", () => {
   })
 
   it("should roundtrip empty list", () => {
-    const TestStruct = defineStruct([
-      ["value", "u32"],
-    ] as const)
+    const TestStruct = defineStruct([["value", "u32"]] as const)
 
     const original: { value: number }[] = []
 
