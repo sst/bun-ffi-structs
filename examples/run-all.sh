@@ -38,8 +38,10 @@ for file in "${files[@]}"; do
 
   echo
   echo "=== ${base%.*} ==="
+  set +e  # Temporarily disable exit on error
   "$BUN_BIN" --cwd "$ROOT_DIR" "$file"
   exit_code=$?
+  set -e  # Re-enable exit on error
   echo "Exit code: $exit_code" >&2
   if [ $exit_code -eq 0 ]; then
     ((passed++))
