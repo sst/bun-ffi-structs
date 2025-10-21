@@ -1,7 +1,7 @@
 import { dlopen, CString, ptr } from "bun:ffi"
 import { defineStruct } from "../../src/structs_ffi"
 
-const PersonStruct = defineStruct([
+export const PersonStruct = defineStruct([
   ["age", "u32"],
   ["height", "f32"],
   ["weight", "f64"],
@@ -28,6 +28,10 @@ const native = dlopen("libnative.dylib", {
   calculate_bmi: {
     args: ["ptr"],
     returns: "f32",
+  },
+  unpackTest: {
+    args: ["ptr"],
+    returns: "void",
   },
 })
 
@@ -60,4 +64,3 @@ export function calculateBMI(personBuffer: ArrayBuffer): number {
   return native.symbols.calculate_bmi(ptr(personBuffer))
 }
 
-export { PersonStruct }
