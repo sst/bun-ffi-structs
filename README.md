@@ -25,20 +25,15 @@ bun install bun-ffi-structs
 ## Usage
 
 ```typescript
-import {
-  defineStruct,
-  defineEnum,
-  allocStruct,
-  objectPtr,
-} from "./structs_ffi";
+import { defineStruct, defineEnum, allocStruct, objectPtr } from "./structs_ffi"
 
-const ColorEnum = defineEnum({ RED: 0, GREEN: 1, BLUE: 2 });
+const ColorEnum = defineEnum({ RED: 0, GREEN: 1, BLUE: 2 })
 
 const PositionStruct = defineStruct([
   ["x", "f32"],
   ["y", "f32"],
   ["z", "f32"],
-] as const);
+] as const)
 
 const ObjectStruct = defineStruct([
   ["id", "u32"],
@@ -46,19 +41,19 @@ const ObjectStruct = defineStruct([
   ["color", ColorEnum],
   ["count", "u32", { lengthOf: "items" }],
   ["items", ["u32"]],
-] as const);
+] as const)
 
 const buffer = ObjectStruct.pack({
   id: 42,
   position: { x: 1.0, y: 2.0, z: 3.0 },
   color: "BLUE",
   items: [10, 20, 30],
-});
+})
 
-const unpacked = ObjectStruct.unpack(buffer);
+const unpacked = ObjectStruct.unpack(buffer)
 
 // Allocate with pre-sized arrays
 const { buffer, view, subBuffers } = allocStruct(ObjectStruct, {
   lengths: { items: 5 },
-});
+})
 ```

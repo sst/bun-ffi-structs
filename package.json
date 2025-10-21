@@ -4,6 +4,11 @@
   "main": "src/index.ts",
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "prettier:check": "bun prettier --check .",
+    "prettier:write": "bun prettier --write ."
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "prettier": "3.6.2"
