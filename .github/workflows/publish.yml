@@ -33,7 +33,7 @@ jobs:
       - name: Publish to NPM
         run: cd dist && bun publish --access public
         env:
-          BUN_CONFIG_REGISTRY_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
