@@ -1,6 +1,6 @@
 import { defineStruct } from "../src/structs_ffi"
 
-console.log("=== Example 19: packList for Efficient Batch Packing ===\n")
+console.log("=== Example 19: packList/unpackList for Efficient Batch Operations ===\n")
 
 const RGBAStruct = defineStruct([
   ["r", "u8"],
@@ -87,9 +87,33 @@ console.log("✓ Packed", particles.length, "particles into", particleBuffer.byt
 console.log("  Struct size:", ParticleStruct.size, "bytes per particle")
 console.log("  Average packing time: ~", (particleBuffer.byteLength / particles.length).toFixed(2), "bytes/particle")
 
+console.log("\n=== unpackList: Reading Data Back ===\n")
+
+const unpackedChunks = StyledChunkStruct.unpackList(buffer, chunks.length)
+
+console.log("✓ Unpacked", unpackedChunks.length, "chunks from buffer")
+console.log("  Note: cstring fields unpack as pointers (use char* with reduceValue for actual strings)")
+console.log("  First chunk fg color:", unpackedChunks[0]!.fg)
+console.log("  Third chunk bg color:", unpackedChunks[2]!.bg)
+
+console.log("\n=== Roundtrip Example: Particle System ===\n")
+
+const roundtripParticles = ParticleStruct.unpackList(particleBuffer, particles.length)
+
+console.log("✓ Roundtrip successful!")
+console.log("  Original particles:", particles.length)
+console.log("  Unpacked particles:", roundtripParticles.length)
+console.log("  First particle ID:", roundtripParticles[0]!.id)
+console.log("  First particle position:", {
+  x: roundtripParticles[0]!.position.x.toFixed(2),
+  y: roundtripParticles[0]!.position.y.toFixed(2),
+  z: roundtripParticles[0]!.position.z.toFixed(2),
+})
+
 console.log("\n=== Performance Benefits ===\n")
 console.log("• Single buffer allocation instead of multiple allocations")
 console.log("• Simpler, more readable code")
 console.log("• Automatic validation for all items")
 console.log("• Consistent with pack() and packInto() API")
 console.log("• No manual offset calculations needed")
+console.log("• Full roundtrip support with packList/unpackList")
