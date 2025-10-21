@@ -118,4 +118,3 @@ console.log("• Consistent with pack() and packInto() API")
 console.log("• No manual offset calculations needed")
 console.log("• Full roundtrip support with packList/unpackList")
 
-process.exit(0)

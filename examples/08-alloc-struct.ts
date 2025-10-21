@@ -27,4 +27,3 @@ for (const field of description) {
 
 console.log("\n✓ Pre-allocation helps when working with FFI buffers!")
 
-process.exit(0)

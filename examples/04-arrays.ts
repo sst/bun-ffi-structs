@@ -38,4 +38,3 @@ console.log("  values:", unpacked.values)
 
 console.log("\n✓ Arrays with length fields work!")
 
-process.exit(0)

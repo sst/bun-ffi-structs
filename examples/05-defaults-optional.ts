@@ -33,4 +33,3 @@ console.log("Unpacked:", unpacked3)
 
 console.log("\n✓ Defaults and optional fields work as expected!")
 
-process.exit(0)

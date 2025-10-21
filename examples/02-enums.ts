@@ -41,4 +41,3 @@ console.log("Unpacked task:", unpacked)
 
 console.log("\n✓ Enum values preserved through pack/unpack!")
 
-process.exit(0)

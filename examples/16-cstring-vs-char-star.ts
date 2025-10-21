@@ -37,4 +37,3 @@ console.log("  Length stored separately in nameLength field")
 
 console.log("\n✓ Use cstring for null-terminated, char* for length-prefixed strings!")
 
-process.exit(0)

@@ -96,4 +96,3 @@ console.log("  Entries pointer:", entriesPtr !== 0n ? "✓ allocated" : "✗ nul
 console.log("\n✓ Complex nested structures with arrays, enums, and defaults work!")
 console.log("\nLimitation: Unpacking arrays of structs is not yet implemented.")
 
-process.exit(0)

@@ -32,4 +32,3 @@ console.log("Packed size:", packed.byteLength, "bytes")
 console.log("\n✓ Arrays of structs can be packed!")
 console.log("\nLimitation: Unpacking arrays of structs is not yet implemented.")
 
-process.exit(0)

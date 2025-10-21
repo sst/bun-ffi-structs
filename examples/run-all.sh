@@ -42,11 +42,10 @@ for file in "${files[@]}"; do
   "$BUN_BIN" --cwd "$ROOT_DIR" "$file"
   exit_code=$?
   set -e  # Re-enable exit on error
-  echo "Exit code: $exit_code" >&2
   if [ $exit_code -eq 0 ]; then
-    ((passed++))
+    passed=$((passed + 1))
   else
-    ((failed++))
+    failed=$((failed + 1))
     failures+=("$base")
   fi
 done

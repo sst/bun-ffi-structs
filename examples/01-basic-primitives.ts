@@ -30,4 +30,3 @@ console.log("Unpacked:", unpacked)
 
 console.log("\n✓ All primitive values match!")
 
-process.exit(0)
