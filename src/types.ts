@@ -199,4 +199,5 @@ export interface StructDefOptions {
   default?: Record<string, any>
   mapValue?: (value: any) => any
   reduceValue?: (value: any) => any
+  useZigInternal?: boolean
 }

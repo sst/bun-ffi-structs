@@ -176,6 +176,7 @@ interface StructLayoutField {
   unpack: (view: DataView, offset: number) => any
   type: PrimitiveType | EnumDef<any> | StructDef<any> | "cstring" | "char*" | ObjectPointerDef<any> | readonly [any]
   lengthOf?: string
+  zigVirtualFlagFor?: string
 }
 
 function isStruct(type: any): type is StructDef<any> {
@@ -248,6 +249,22 @@ function primitivePackers(type: PrimitiveType) {
 
 const { pack: pointerPacker, unpack: pointerUnpacker } = primitivePackers("pointer")
 
+function needsZigOptionalFlag(type: any): boolean {
+  if (typeof type === "string" && (type === "cstring" || type === "char*" || type === "pointer")) {
+    return false
+  }
+  if (isObjectPointerDef(type)) {
+    return false
+  }
+  if (isStruct(type)) {
+    return false
+  }
+  if (Array.isArray(type)) {
+    return false
+  }
+  return true
+}
+
 export function packObjectArray(val: (PointyObject | null)[]) {
   const buffer = new ArrayBuffer(val.length * pointerSize)
   const bufferView = new DataView(buffer)
@@ -275,6 +292,7 @@ export function defineStruct<const Fields extends readonly StructField[], const 
     def: EnumDef<any> | PrimitiveType
   }[] = []
   const arrayFieldsMetadata: Record<string, ArrayFieldMetadata> = {}
+  const zigInternal = !!structDefOptions?.useZigInternal
 
   for (const [name, typeOrStruct, options = {}] of fields) {
     if (options.condition && !options.condition()) {
@@ -559,6 +577,25 @@ export function defineStruct<const Fields extends readonly StructField[], const 
 
     offset += size
     maxAlign = Math.max(maxAlign, align)
+
+    if (zigInternal && options.optional && needsZigOptionalFlag(typeOrStruct)) {
+      const flagOffset = offset
+      const flagLayoutField: StructLayoutField = {
+        name: `__zig_flag_${name}`,
+        offset: flagOffset,
+        size: 1,
+        align: 1,
+        optional: true,
+        pack: (view: DataView, off: number, val: any) => {
+          view.setUint8(off, val ? 1 : 0)
+        },
+        unpack: (view: DataView, off: number) => view.getUint8(off),
+        type: "u8",
+        zigVirtualFlagFor: name,
+      }
+      layout.push(flagLayoutField)
+      offset += 1
+    }
   }
 
   // Resolve lengthOf fields
@@ -619,15 +656,17 @@ export function defineStruct<const Fields extends readonly StructField[], const 
   }
 
   const totalSize = alignOffset(offset, maxAlign)
-  const description = layout.map((f) => ({
-    name: f.name,
-    offset: f.offset,
-    size: f.size,
-    align: f.align,
-    optional: f.optional,
-    type: f.type,
-    lengthOf: f.lengthOf,
-  }))
+  const description = layout
+    .filter((f) => !f.zigVirtualFlagFor)
+    .map((f) => ({
+      name: f.name,
+      offset: f.offset,
+      size: f.size,
+      align: f.align,
+      optional: f.optional,
+      type: f.type,
+      lengthOf: f.lengthOf,
+    }))
   const layoutByName = new Map(description.map((f) => [f.name, f]))
   const arrayFields = new Map(Object.entries(arrayFieldsMetadata))
 
@@ -649,6 +688,13 @@ export function defineStruct<const Fields extends readonly StructField[], const 
       }
 
       for (const field of layout) {
+        if (field.zigVirtualFlagFor) {
+          const sourceValue = (mappedObj as any)[field.zigVirtualFlagFor] ?? undefined
+          const flagValue = sourceValue !== null && sourceValue !== undefined
+          field.pack(view, field.offset, flagValue, mappedObj, options)
+          continue
+        }
+
         const value = (mappedObj as any)[field.name] ?? field.default
         if (!field.optional && value === undefined) {
           fatalError(`Packing non-optional field '${field.name}' but value is undefined (and no default provided)`)
@@ -678,6 +724,13 @@ export function defineStruct<const Fields extends readonly StructField[], const 
       }
 
       for (const field of layout) {
+        if (field.zigVirtualFlagFor) {
+          const sourceValue = (mappedObj as any)[field.zigVirtualFlagFor] ?? undefined
+          const flagValue = sourceValue !== null && sourceValue !== undefined
+          field.pack(view, offset + field.offset, flagValue, mappedObj, options)
+          continue
+        }
+
         const value = (mappedObj as any)[field.name] ?? field.default
         if (!field.optional && value === undefined) {
           console.warn(
@@ -706,20 +759,33 @@ export function defineStruct<const Fields extends readonly StructField[], const 
       const view = new DataView(buf)
       // Start with struct-level defaults if provided
       const result: any = structDefOptions?.default ? { ...structDefOptions.default } : {}
+      const zigFlags: Record<string, boolean> = {}
 
       for (const field of layout) {
+        if (field.zigVirtualFlagFor) {
+          if (!field.unpack) continue
+          const flagValue = field.unpack(view, field.offset)
+          zigFlags[field.zigVirtualFlagFor] = !!flagValue
+        }
+      }
+
+      for (const field of layout) {
+        if (field.zigVirtualFlagFor) continue
+
         // Skip fields that don't have an unpacker (e.g., write-only or complex cases not yet impl)
         if (!field.unpack) {
-          // This could happen for lengthOf fields if unpack isn't needed, or unimplemented array types
-          // console.warn(`Field '${field.name}' has no unpacker defined.`);
           continue
         }
 
         try {
           result[field.name] = field.unpack(view, field.offset)
+
+          if (zigInternal && field.optional && zigFlags[field.name] === false) {
+            result[field.name] = null
+          }
         } catch (e: any) {
           console.error(`Error unpacking field '${field.name}' at offset ${field.offset}:`, e)
-          throw e // Re-throw after logging context
+          throw e
         }
       }
 
@@ -745,6 +811,13 @@ export function defineStruct<const Fields extends readonly StructField[], const 
         }
 
         for (const field of layout) {
+          if (field.zigVirtualFlagFor) {
+            const sourceValue = (mappedObj as any)[field.zigVirtualFlagFor] ?? undefined
+            const flagValue = sourceValue !== null && sourceValue !== undefined
+            field.pack(view, i * totalSize + field.offset, flagValue, mappedObj, options)
+            continue
+          }
+
           const value = (mappedObj as any)[field.name] ?? field.default
           if (!field.optional && value === undefined) {
             fatalError(
@@ -784,14 +857,29 @@ export function defineStruct<const Fields extends readonly StructField[], const 
       for (let i = 0; i < count; i++) {
         const offset = i * totalSize
         const result: any = structDefOptions?.default ? { ...structDefOptions.default } : {}
+        const zigFlags: Record<string, boolean> = {}
 
         for (const field of layout) {
+          if (field.zigVirtualFlagFor) {
+            if (!field.unpack) continue
+            const flagValue = field.unpack(view, offset + field.offset)
+            zigFlags[field.zigVirtualFlagFor] = !!flagValue
+          }
+        }
+
+        for (const field of layout) {
+          if (field.zigVirtualFlagFor) continue
+
           if (!field.unpack) {
             continue
           }
 
           try {
             result[field.name] = field.unpack(view, offset + field.offset)
+
+            if (zigInternal && field.optional && zigFlags[field.name] === false) {
+              result[field.name] = null
+            }
           } catch (e: any) {
             console.error(`Error unpacking field '${field.name}' at index ${i}, offset ${offset + field.offset}:`, e)
             throw e

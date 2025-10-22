@@ -63,3 +63,21 @@ const unpacked = ObjectStruct.unpack(buffer)
 //   count?: number | null | undefined
 // }
 ```
+
+## Zig Internal Optional Layout
+
+When working with Zig FFI and optional types, Zig uses a special internal layout for optionals that differs from the default struct layout. This library supports Zig's internal optional layout via the `useZigInternal` option.
+
+### Usage
+
+```typescript
+import { defineStruct } from "bun-ffi-structs"
+
+const MyStruct = defineStruct(
+  [
+    ["value", "u32"],
+    ["optionalValue", "u32", { optional: true }],
+  ],
+  { useZigInternal: true },
+)
+```
